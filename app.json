@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "probarber-app",
-    "slug": "probarber-app",
+    "name": "ProBarber",
+    "slug": "probarber",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -37,6 +37,17 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {
+        "asyncRoutes": {
+          "web": true
+        }
+      },
+      "eas": {
+        "projectId": "09f19b9b-77e8-4d2d-bc4b-f431fdd2c63d"
+      }
+    },
+    "owner": "kessixtechs-team"
   }
 }
