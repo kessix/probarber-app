@@ -1,7 +1,10 @@
+import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import type { ReactNode } from 'react';
 import {
   Pressable,
   StyleSheet,
+  Switch,
   Text,
   TextInput,
   View,
@@ -83,7 +86,7 @@ export function TextField({
 }: TextInputProps & { label: string; hint?: string; error?: string | null }) {
   return (
     <View style={styles.field}>
-      <AppText variant="label">{label}</AppText>
+      {label ? <AppText variant="label">{label}</AppText> : null}
       <TextInput
         placeholderTextColor={Colors.muted}
         selectionColor={Colors.gold}
@@ -97,6 +100,118 @@ export function TextField({
       ) : hint ? (
         <AppText variant="caption">{hint}</AppText>
       ) : null}
+    </View>
+  );
+}
+
+/** Ajuste de número com - e +. `format` mostra o valor (ex.: "09:00"). */
+export function Stepper({
+  label,
+  value,
+  min,
+  max,
+  step: size = 1,
+  format = String,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  /** De quanto em quanto o valor muda a cada toque. */
+  step?: number;
+  format?: (value: number) => string;
+  onChange: (value: number) => void;
+}) {
+  const step = (delta: number) => onChange(Math.min(max, Math.max(min, value + delta * size)));
+  return (
+    <View style={styles.stepperRow}>
+      <AppText variant="body" style={{ flex: 1 }}>
+        {label}
+      </AppText>
+      <Pressable
+        accessibilityLabel={`Diminuir ${label}`}
+        disabled={value - size < min}
+        onPress={() => step(-1)}
+        style={[styles.stepperButton, value - size < min && { opacity: 0.35 }]}>
+        <Text style={styles.stepperSign}>−</Text>
+      </Pressable>
+      <Text style={styles.stepperValue}>{format(value)}</Text>
+      <Pressable
+        accessibilityLabel={`Aumentar ${label}`}
+        disabled={value + size > max}
+        onPress={() => step(1)}
+        style={[styles.stepperButton, value + size > max && { opacity: 0.35 }]}>
+        <Text style={styles.stepperSign}>+</Text>
+      </Pressable>
+    </View>
+  );
+}
+
+/** Linha com texto e interruptor. */
+export function ToggleRow({
+  label,
+  hint,
+  value,
+  onValueChange,
+  disabled,
+}: {
+  label: string;
+  hint?: string;
+  value: boolean;
+  onValueChange: (value: boolean) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <View style={styles.stepperRow}>
+      <View style={{ flex: 1 }}>
+        <AppText variant="body">{label}</AppText>
+        {hint ? <AppText variant="caption">{hint}</AppText> : null}
+      </View>
+      <Switch
+        value={value}
+        disabled={disabled}
+        onValueChange={onValueChange}
+        trackColor={{ true: Colors.goldDark, false: Colors.bg3 }}
+        thumbColor={value ? Colors.gold : Colors.muted}
+      />
+    </View>
+  );
+}
+
+/** Botão de opção (selecionada fica dourada). */
+export function Chip({ label, selected, onPress }: { label: string; selected?: boolean; onPress: () => void }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ selected: !!selected }}
+      onPress={onPress}
+      style={[styles.chip, selected && styles.chipSelected]}>
+      <Text style={[styles.chipText, selected && { color: '#1a1206' }]}>{label}</Text>
+    </Pressable>
+  );
+}
+
+/** Foto quadrada ou retangular, com ícone quando não há imagem. */
+export function Photo({
+  uri,
+  size = 56,
+  icon = 'image-outline',
+  rounded = false,
+}: {
+  uri: string | null | undefined;
+  size?: number;
+  icon?: keyof typeof Ionicons.glyphMap;
+  rounded?: boolean;
+}) {
+  const radius = rounded ? size / 2 : Radius.md;
+  return (
+    <View style={[styles.photo, { width: size, height: size, borderRadius: radius }]}>
+      {uri ? (
+        <Image source={{ uri }} style={{ width: size, height: size }} contentFit="cover" />
+      ) : (
+        <Ionicons name={icon} size={size * 0.4} color={Colors.muted} />
+      )}
     </View>
   );
 }
@@ -161,6 +276,37 @@ const styles = StyleSheet.create({
     borderRadius: Radius.pill,
   },
   pillText: { fontFamily: Fonts.medium, fontSize: 11 },
+  stepperRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  stepperButton: {
+    width: 36,
+    height: 36,
+    borderRadius: Radius.sm,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.bg3,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepperSign: { fontFamily: Fonts.semibold, fontSize: 20, lineHeight: 24, color: Colors.gold },
+  stepperValue: { minWidth: 64, textAlign: 'center', fontFamily: Fonts.semibold, fontSize: 15, color: Colors.fg },
+  chip: {
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: Radius.pill,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.bg3,
+  },
+  chipSelected: { backgroundColor: Colors.gold, borderColor: Colors.gold },
+  chipText: { fontFamily: Fonts.medium, fontSize: 13, color: Colors.muted },
+  photo: {
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.bg3,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
   field: { gap: 6 },
   input: {
     fontFamily: Fonts.regular,

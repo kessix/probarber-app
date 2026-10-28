@@ -43,6 +43,9 @@ export function formatDayShort(date: Date) {
 /** "09:30" no horário local */
 export const formatTime = (date: Date) => `${pad(date.getHours())}:${pad(date.getMinutes())}`;
 
+/** 540 -> "09:00" (minutos desde a meia-noite; 1440 = "24:00") */
+export const formatMinutes = (minutes: number) => `${pad(Math.floor(minutes / 60))}:${pad(minutes % 60)}`;
+
 /** "R$ 70,00" */
 export function formatBRL(value: number) {
   return `R$ ${value.toFixed(2).replace('.', ',')}`;

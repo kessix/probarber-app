@@ -45,7 +45,7 @@ export default function RecursosScreen() {
               <View style={{ flex: 1 }}>
                 <AppText variant="title">Configuração da agenda</AppText>
                 <AppText variant="caption">
-                  Defina como seus clientes agendam e pagam: comum, com pagamento obrigatório ou opcional.
+                  Horário de atendimento, almoço, dias fechados, serviços que você atende e como o cliente paga.
                 </AppText>
               </View>
               <Ionicons name="chevron-forward" size={18} color={Colors.muted} />

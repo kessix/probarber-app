@@ -59,6 +59,12 @@ export default function AgendaScreen() {
 
   const list = view === 'dia' ? dayList : pending;
   const selectedDate = fromDateKey(selected);
+  const dayLabel =
+    selected === toDateKey(today)
+      ? 'Hoje'
+      : selected === toDateKey(addDays(today, 1))
+        ? 'Amanhã'
+        : 'Dia selecionado';
 
   return (
     <Screen>
@@ -79,11 +85,11 @@ export default function AgendaScreen() {
         <View style={styles.header}>
           <View style={{ flex: 1 }}>
             <AppText variant="label">Agenda</AppText>
-            <AppText variant="display">
-              {view === 'dia' ? (selected === toDateKey(today) ? 'Hoje' : 'Dia selecionado') : 'Pendências'}
+            <AppText variant="display" style={styles.dateTitle} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.5}>
+              {view === 'dia' ? formatDayLong(selectedDate) : 'Pendências'}
             </AppText>
             <AppText variant="caption">
-              {view === 'dia' ? formatDayLong(selectedDate) : 'Pagamentos a receber na barbearia'}
+              {view === 'dia' ? dayLabel : 'Pagamentos a receber na barbearia'}
             </AppText>
           </View>
           <Link href="/agenda/configuracao" asChild>
@@ -177,6 +183,8 @@ export default function AgendaScreen() {
 const styles = StyleSheet.create({
   content: { padding: Spacing.three, paddingBottom: Spacing.five, gap: Spacing.three },
   header: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.three },
+  // Título menor que o padrão (30): a data inteira cabe em uma linha.
+  dateTitle: { fontSize: 22, lineHeight: 28 },
   iconButton: {
     width: 44,
     height: 44,

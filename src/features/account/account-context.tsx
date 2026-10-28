@@ -14,7 +14,23 @@ import { Alert } from 'react-native';
 import type { BookingMode } from '@/features/agenda/types';
 import { supabase } from '@/lib/supabase';
 
-export type Shop = { id: string; slug: string; name: string; bookingMode: BookingMode };
+export type Shop = {
+  id: string;
+  slug: string;
+  name: string;
+  bookingMode: BookingMode;
+  /** Quantos dias à frente o cliente pode agendar (1 a 14), contando hoje. */
+  bookingWindowDays: number;
+  logoUrl: string | null;
+  phone: string | null;
+  address: string | null;
+  instagram: string | null;
+  facebook: string | null;
+  googleReviewUrl: string | null;
+};
+
+/** O que o barbeiro pode alterar na barbearia. */
+export type ShopSettings = Omit<Shop, 'id'>;
 
 /**
  * Onde o barbeiro está no app:
@@ -33,12 +49,58 @@ type AccountContextValue = {
   /** Recarrega a barbearia (depois do cadastro). */
   reload: () => Promise<void>;
   signOut: () => Promise<void>;
-  updateBookingMode: (mode: BookingMode) => Promise<void>;
+  /** Salva campos da barbearia. Devolve false (e avisa o barbeiro) se o banco recusar. */
+  updateShop: (patch: Partial<ShopSettings>) => Promise<boolean>;
 };
 
 const AccountContext = createContext<AccountContextValue | null>(null);
 
-type ShopRow = { id: string; slug: string; name: string; booking_mode: BookingMode };
+type ShopRow = {
+  id: string;
+  slug: string;
+  name: string;
+  booking_mode: BookingMode;
+  booking_window_days: number;
+  logo_url: string | null;
+  phone: string | null;
+  address: string | null;
+  instagram: string | null;
+  facebook: string | null;
+  google_review_url: string | null;
+};
+
+const SHOP_COLUMNS =
+  'id, slug, name, booking_mode, booking_window_days, logo_url, phone, address, instagram, facebook, google_review_url';
+
+// Campo do app -> coluna do banco
+const COLUMN_OF: Record<keyof ShopSettings, string> = {
+  slug: 'slug',
+  name: 'name',
+  bookingMode: 'booking_mode',
+  bookingWindowDays: 'booking_window_days',
+  logoUrl: 'logo_url',
+  phone: 'phone',
+  address: 'address',
+  instagram: 'instagram',
+  facebook: 'facebook',
+  googleReviewUrl: 'google_review_url',
+};
+
+function toShop(row: ShopRow): Shop {
+  return {
+    id: row.id,
+    slug: row.slug,
+    name: row.name,
+    bookingMode: row.booking_mode,
+    bookingWindowDays: row.booking_window_days,
+    logoUrl: row.logo_url,
+    phone: row.phone,
+    address: row.address,
+    instagram: row.instagram,
+    facebook: row.facebook,
+    googleReviewUrl: row.google_review_url,
+  };
+}
 
 export function AccountProvider({ children }: { children: ReactNode }) {
   const [account, setAccount] = useState<Account>({ status: 'loading' });
@@ -53,7 +115,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     }
     const { data, error } = await supabase
       .from('barbershops')
-      .select('id, slug, name, booking_mode')
+      .select(SHOP_COLUMNS)
       .eq('owner_id', session.user.id)
       .maybeSingle<ShopRow>();
     if (id !== loadId.current) return;
@@ -65,12 +127,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     } else if (!data) {
       setAccount({ status: 'needsShop', userId: session.user.id, email });
     } else {
-      setAccount({
-        status: 'ready',
-        userId: session.user.id,
-        email,
-        shop: { id: data.id, slug: data.slug, name: data.name, bookingMode: data.booking_mode },
-      });
+      setAccount({ status: 'ready', userId: session.user.id, email, shop: toShop(data) });
     }
   }, []);
 
@@ -93,17 +150,31 @@ export function AccountProvider({ children }: { children: ReactNode }) {
       signOut: async () => {
         await supabase.auth.signOut();
       },
-      updateBookingMode: async (mode) => {
-        if (account.status !== 'ready') return;
-        const { error } = await supabase
-          .from('barbershops')
-          .update({ booking_mode: mode })
-          .eq('id', account.shop.id);
-        if (error) {
-          Alert.alert('Não foi possível salvar', 'Tente de novo.');
-          return;
-        }
-        setAccount({ ...account, shop: { ...account.shop, bookingMode: mode } });
+      updateShop: async (patch) => {
+        if (account.status !== 'ready') return false;
+        const before = account.shop;
+        // Atualiza a tela na hora e desfaz se o banco recusar.
+        setAccount((current) =>
+          current.status === 'ready' ? { ...current, shop: { ...current.shop, ...patch } } : current,
+        );
+        const columns = Object.fromEntries(
+          Object.entries(patch).map(([field, value]) => [COLUMN_OF[field as keyof ShopSettings], value]),
+        );
+        const { error } = await supabase.from('barbershops').update(columns).eq('id', before.id);
+        if (!error) return true;
+
+        Alert.alert(
+          'Não foi possível salvar',
+          error.code === '23505' ? 'Este endereço do link já está em uso. Escolha outro.' : 'Tente de novo.',
+        );
+        // Volta só os campos que este toque mudou, sem apagar ajustes feitos em seguida.
+        const previous = Object.fromEntries(
+          Object.keys(patch).map((field) => [field, before[field as keyof ShopSettings]]),
+        );
+        setAccount((current) =>
+          current.status === 'ready' ? { ...current, shop: { ...current.shop, ...previous } } : current,
+        );
+        return false;
       },
     }),
     [account, load],

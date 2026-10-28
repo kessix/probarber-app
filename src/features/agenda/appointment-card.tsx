@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, View } from 'react-native';
 
 import { AppText, Button, Card, Pill } from '@/components/ui';
 import { Colors, Spacing } from '@/constants/theme';
@@ -29,7 +29,7 @@ export function AppointmentCard({
   /** Mostrado na visão de pendências, onde os dias se misturam. */
   dateLabel?: string;
 }) {
-  const { completeAppointment, cancelAppointment, registerPayment } = useAgenda();
+  const { completeAppointment, cancelAppointment, registerPayment, blockClient } = useAgenda();
   const [open, setOpen] = useState(false);
   const { status, payment } = appointment;
   const cancelled = status === 'cancelado';
@@ -95,6 +95,31 @@ export function AppointmentCard({
                 <Button variant="ghost" label="Cancelar" onPress={() => cancelAppointment(appointment.id)} />
               </View>
             </View>
+          ) : null}
+          {appointment.clientId ? (
+            <Button
+              variant="ghost"
+              label="Bloquear cliente"
+              onPress={() =>
+                Alert.alert(
+                  `Bloquear ${appointment.clientName}?`,
+                  'Ele não vai mais conseguir agendar pelo seu link. Você pode desbloquear depois em Configurações. Os agendamentos já marcados continuam.',
+                  [
+                    { text: 'Cancelar', style: 'cancel' },
+                    {
+                      text: 'Bloquear',
+                      style: 'destructive',
+                      onPress: async () => {
+                        if (await blockClient(appointment.clientId!)) {
+                          Alert.alert('Cliente bloqueado', 'Ele não pode mais agendar pelo seu link.');
+                          setOpen(false);
+                        }
+                      },
+                    },
+                  ],
+                )
+              }
+            />
           ) : null}
         </View>
       ) : null}

@@ -31,6 +31,8 @@ type AgendaContextValue = {
   cancelAppointment: (id: string) => void;
   /** Dá baixa em uma pendência: o barbeiro recebeu na barbearia. */
   registerPayment: (id: string, method: PaymentMethod) => void;
+  /** Impede o cliente de agendar de novo pelo link. */
+  blockClient: (clientId: string) => Promise<boolean>;
 };
 
 const AgendaContext = createContext<AgendaContextValue | null>(null);
@@ -38,6 +40,7 @@ const AgendaContext = createContext<AgendaContextValue | null>(null);
 type Row = {
   id: string;
   starts_at: string;
+  client_id: string | null;
   client_name: string;
   service_name: string;
   price_cents: number;
@@ -48,7 +51,7 @@ type Row = {
 };
 
 const COLUMNS =
-  'id, starts_at, client_name, service_name, price_cents, status, payment_status, payment_method, payment_online';
+  'id, starts_at, client_id, client_name, service_name, price_cents, status, payment_status, payment_method, payment_online';
 
 // Pendências antigas ainda precisam aparecer, então a agenda carrega os últimos 30 dias.
 const HISTORY_DAYS = 30;
@@ -72,6 +75,7 @@ function fromRow(row: Row): Appointment {
     price: row.price_cents / 100,
     status: row.status,
     payment: toPayment(row),
+    clientId: row.client_id,
   };
 }
 
@@ -94,7 +98,7 @@ async function fetchAppointments(shopId: string): Promise<Appointment[] | null> 
 
 /** A agenda é da barbearia do barbeiro logado. Remonte com `key` ao trocar de barbearia. */
 export function AgendaProvider({ children }: { children: ReactNode }) {
-  const { account, updateBookingMode } = useAccount();
+  const { account, updateShop } = useAccount();
   const shop = account.status === 'ready' ? account.shop : null;
   const shopId = shop?.id ?? null;
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -140,13 +144,21 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
       settings: { bookingMode: shop?.bookingMode ?? 'comum' },
       appointments,
       refresh,
-      setBookingMode: (mode) => void updateBookingMode(mode),
+      setBookingMode: (mode) => void updateShop({ bookingMode: mode }),
       completeAppointment: (id) => void mutate(id, { status: 'concluido' }),
       cancelAppointment: (id) => void mutate(id, { status: 'cancelado' }),
       registerPayment: (id, method) =>
         void mutate(id, { payment_status: 'pago', payment_method: method, payment_online: false }),
+      blockClient: async (clientId) => {
+        const { error } = await supabase.from('clients').update({ blocked: true }).eq('id', clientId);
+        if (error) {
+          Alert.alert('Não foi possível bloquear', 'Tente de novo.');
+          return false;
+        }
+        return true;
+      },
     }),
-    [shop?.bookingMode, appointments, refresh, updateBookingMode, mutate],
+    [shop?.bookingMode, appointments, refresh, updateShop, mutate],
   );
 
   return <AgendaContext.Provider value={value}>{children}</AgendaContext.Provider>;

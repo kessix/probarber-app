@@ -7,11 +7,21 @@ export type Recurso = {
   description: string;
   icon: ComponentProps<typeof Ionicons>['name'];
   /** Recursos prontos têm rota própria; os demais usam /recurso/[id] ("em breve"). */
-  href?: '/meu-link';
+  href?: '/servicos' | '/meu-link' | '/configuracoes';
 };
 
-/** Recursos que ainda não têm tela própria (usam /recurso/[id] como "em breve"). Textos da landpage. */
+/**
+ * Itens do menu Recursos, na ordem em que aparecem (a Configuração da agenda vem antes, em destaque).
+ * Os que não têm `href` ainda não existem e abrem /recurso/[id] como "em breve". Textos da landpage.
+ */
 export const RECURSOS: Recurso[] = [
+  {
+    id: 'servicos',
+    title: 'Serviços',
+    description: 'O catálogo que seu cliente vê ao agendar, com foto, duração e preço.',
+    icon: 'cut-outline',
+    href: '/servicos',
+  },
   {
     id: 'meu-link',
     title: 'Meu link',
@@ -48,5 +58,12 @@ export const RECURSOS: Recurso[] = [
     title: 'Suporte',
     description: 'Fale com gente de verdade por chat ou WhatsApp.',
     icon: 'headset-outline',
+  },
+  {
+    id: 'configuracoes',
+    title: 'Configurações',
+    description: 'Dados da barbearia, clientes bloqueados e informações da conta.',
+    icon: 'settings-outline',
+    href: '/configuracoes',
   },
 ];

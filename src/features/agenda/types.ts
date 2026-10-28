@@ -28,6 +28,8 @@ export type Appointment = {
   price: number;
   status: AppointmentStatus;
   payment: Payment;
+  /** Cliente que agendou (para bloquear). Vazio em agendamentos antigos. */
+  clientId: string | null;
 };
 
 export type AgendaSettings = {

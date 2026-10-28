@@ -1,3 +1,7 @@
+-- ATENÇÃO: migrações são numeradas e rodam em ORDEM, uma vez cada (001, depois 002...).
+-- Não rode esta de novo depois de aplicar as seguintes: ela recria funções antigas.
+-- Esta é a base do banco (v1). A agenda por profissional está em 002.
+
 -- ProBarber: esquema inicial do banco (Supabase / Postgres).
 -- Rodar no SQL Editor do projeto. Pode ser rodado de novo sem erro, mas NÃO apaga dados.
 --
@@ -24,6 +28,8 @@ create table if not exists public.barbershops (
   opening_hour    int  not null default 9  check (opening_hour between 0 and 23),
   closing_hour    int  not null default 19 check (closing_hour between 1 and 24),
   closed_weekdays int[] not null default '{0}',   -- 0 = domingo
+  -- quantos dias à frente o cliente pode agendar, contando hoje (máximo 14)
+  booking_window_days int not null default 10 check (booking_window_days between 1 and 14),
   created_at      timestamptz not null default now(),
   check (closing_hour > opening_hour)
 );
@@ -130,6 +136,8 @@ declare
   v_shop    public.barbershops%rowtype;
   v_service public.services%rowtype;
   v_id      uuid;
+  v_local   timestamp;   -- o horário no fuso de Brasília
+  v_minutes int;
 begin
   select * into v_shop from public.barbershops where slug = p_slug;
   if not found then raise exception 'barbearia_nao_encontrada'; end if;
@@ -139,6 +147,21 @@ begin
   if not found then raise exception 'servico_invalido'; end if;
 
   if p_starts_at <= now() then raise exception 'horario_no_passado'; end if;
+
+  -- Regras de funcionamento da barbearia, no fuso de Brasília. Valem para qualquer chamada,
+  -- não só para o site: quem chamar a função direto também não agenda fora do expediente.
+  v_local   := p_starts_at at time zone 'America/Sao_Paulo';
+  v_minutes := extract(hour from v_local)::int * 60 + extract(minute from v_local)::int;
+  if extract(dow from v_local)::int = any (v_shop.closed_weekdays) then
+    raise exception 'dia_fechado';
+  end if;
+  if v_minutes < v_shop.opening_hour * 60
+     or v_minutes + v_service.duration_minutes > v_shop.closing_hour * 60 then
+    raise exception 'fora_do_horario';
+  end if;
+  if v_local::date > (now() at time zone 'America/Sao_Paulo')::date + (v_shop.booking_window_days - 1) then
+    raise exception 'fora_da_janela';
+  end if;
 
   insert into public.appointments
     (barbershop_id, service_id, service_name, price_cents, duration_minutes,
@@ -164,3 +187,10 @@ grant execute on function public.create_appointment(text, uuid, timestamptz, tex
 -- Liga a cobrança Pix (AbacatePay) ao agendamento, para confirmar o pagamento sozinho.
 -- Quem grava aqui é o servidor do site, com a chave secreta. O público não lê esta tabela.
 alter table public.appointments add column if not exists pix_charge_id text unique;
+
+-- ------------------------------------- Configuração da agenda (migração) ---
+-- Quantos dias à frente o cliente pode agendar. Em bancos que já existem, a coluna é criada aqui.
+alter table public.barbershops
+  add column if not exists booking_window_days int not null default 10
+  check (booking_window_days between 1 and 14);
+-- A função create_appointment acima (create or replace) passa a validar dia, horário e prazo.
