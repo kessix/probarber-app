@@ -7,6 +7,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 
 import { Colors, Fonts } from '@/constants/theme';
+import { AccountProvider, useAccount } from '@/features/account/account-context';
 import { AgendaProvider } from '@/features/agenda/agenda-context';
 
 SplashScreen.preventAutoHideAsync();
@@ -19,14 +20,29 @@ export default function RootLayout() {
     PlayfairDisplay_700Bold,
   });
 
-  useEffect(() => {
-    if (loaded || error) SplashScreen.hideAsync();
-  }, [loaded, error]);
-
   if (!loaded && !error) return null;
 
   return (
-    <AgendaProvider>
+    <AccountProvider>
+      <Shell />
+    </AccountProvider>
+  );
+}
+
+/** Escolhe as telas pelo estado da conta: entrar, cadastrar a barbearia ou usar o app. */
+function Shell() {
+  const { account } = useAccount();
+  const status = account.status;
+
+  useEffect(() => {
+    if (status !== 'loading') SplashScreen.hideAsync();
+  }, [status]);
+
+  if (status === 'loading') return null;
+
+  return (
+    // Troca de barbearia (ou sair) remonta a agenda e descarta dados da conta anterior.
+    <AgendaProvider key={account.status === 'ready' ? account.shop.id : 'none'}>
       <StatusBar style="light" />
       <Stack
         screenOptions={{
@@ -36,9 +52,20 @@ export default function RootLayout() {
           headerTitleStyle: { fontFamily: Fonts.semibold, color: Colors.fg },
           headerShadowVisible: false,
         }}>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="agenda/configuracao" options={{ title: 'Configuração da agenda' }} />
-        <Stack.Screen name="recurso/[id]" />
+        <Stack.Protected guard={status === 'signedOut'}>
+          <Stack.Screen name="entrar" options={{ headerShown: false }} />
+        </Stack.Protected>
+
+        <Stack.Protected guard={status === 'needsShop'}>
+          <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+        </Stack.Protected>
+
+        <Stack.Protected guard={status === 'ready'}>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="agenda/configuracao" options={{ title: 'Configuração da agenda' }} />
+          <Stack.Screen name="meu-link" options={{ title: 'Meu link' }} />
+          <Stack.Screen name="recurso/[id]" />
+        </Stack.Protected>
       </Stack>
     </AgendaProvider>
   );

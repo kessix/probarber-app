@@ -6,6 +6,8 @@ export type Recurso = {
   title: string;
   description: string;
   icon: ComponentProps<typeof Ionicons>['name'];
+  /** Recursos prontos têm rota própria; os demais usam /recurso/[id] ("em breve"). */
+  href?: '/meu-link';
 };
 
 /** Recursos que ainda não têm tela própria (usam /recurso/[id] como "em breve"). Textos da landpage. */
@@ -13,8 +15,9 @@ export const RECURSOS: Recurso[] = [
   {
     id: 'meu-link',
     title: 'Meu link',
-    description: 'Personalize o link de agendamento com a marca da sua barbearia.',
+    description: 'Seu link de agendamento para divulgar no Instagram e no WhatsApp.',
     icon: 'link-outline',
+    href: '/meu-link',
   },
   {
     id: 'equipe',

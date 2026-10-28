@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Link } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 
 import { AppText, Screen } from '@/components/ui';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
@@ -36,7 +36,8 @@ function Stat({ label, value }: { label: string; value: string }) {
 }
 
 export default function AgendaScreen() {
-  const { appointments, settings } = useAgenda();
+  const { appointments, settings, refresh } = useAgenda();
+  const [refreshing, setRefreshing] = useState(false);
   const today = useMemo(() => startOfToday(), []);
   const days = useMemo(() => Array.from({ length: 14 }, (_, i) => addDays(today, i)), [today]);
   const [selected, setSelected] = useState(toDateKey(today));
@@ -61,7 +62,20 @@ export default function AgendaScreen() {
 
   return (
     <Screen>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            tintColor={Colors.gold}
+            onRefresh={async () => {
+              setRefreshing(true);
+              await refresh();
+              setRefreshing(false);
+            }}
+          />
+        }>
         <View style={styles.header}>
           <View style={{ flex: 1 }}>
             <AppText variant="label">Agenda</AppText>

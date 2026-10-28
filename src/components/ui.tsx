@@ -3,8 +3,10 @@ import {
   Pressable,
   StyleSheet,
   Text,
+  TextInput,
   View,
   type StyleProp,
+  type TextInputProps,
   type TextProps,
   type ViewStyle,
 } from 'react-native';
@@ -73,24 +75,54 @@ export function Pill({
   );
 }
 
+export function TextField({
+  label,
+  hint,
+  error,
+  ...input
+}: TextInputProps & { label: string; hint?: string; error?: string | null }) {
+  return (
+    <View style={styles.field}>
+      <AppText variant="label">{label}</AppText>
+      <TextInput
+        placeholderTextColor={Colors.muted}
+        selectionColor={Colors.gold}
+        style={[styles.input, error ? { borderColor: Colors.red } : null]}
+        {...input}
+      />
+      {error ? (
+        <AppText variant="caption" style={{ color: Colors.red }}>
+          {error}
+        </AppText>
+      ) : hint ? (
+        <AppText variant="caption">{hint}</AppText>
+      ) : null}
+    </View>
+  );
+}
+
 export function Button({
   label,
   onPress,
   variant = 'primary',
+  disabled,
 }: {
   label: string;
   onPress: () => void;
   variant?: 'primary' | 'ghost';
+  disabled?: boolean;
 }) {
   const primary = variant === 'primary';
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityState={{ disabled: !!disabled }}
+      disabled={disabled}
       onPress={onPress}
       style={({ pressed }) => [
         styles.button,
         primary ? styles.buttonPrimary : styles.buttonGhost,
-        pressed && { opacity: 0.8 },
+        (pressed || disabled) && { opacity: disabled ? 0.4 : 0.8 },
       ]}>
       <Text style={[styles.buttonText, { color: primary ? '#1a1206' : Colors.gold }]}>{label}</Text>
     </Pressable>
@@ -129,6 +161,18 @@ const styles = StyleSheet.create({
     borderRadius: Radius.pill,
   },
   pillText: { fontFamily: Fonts.medium, fontSize: 11 },
+  field: { gap: 6 },
+  input: {
+    fontFamily: Fonts.regular,
+    fontSize: 15,
+    color: Colors.fg,
+    backgroundColor: Colors.bg2,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: Radius.md,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: 13,
+  },
   button: {
     paddingVertical: 10,
     paddingHorizontal: Spacing.three,

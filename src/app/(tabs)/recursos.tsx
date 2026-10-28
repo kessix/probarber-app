@@ -2,13 +2,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { Link } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
-import { AppText, Card, Screen } from '@/components/ui';
+import { AppText, Button, Card, Screen } from '@/components/ui';
 import { Colors, Radius, Spacing } from '@/constants/theme';
+import { useAccount } from '@/features/account/account-context';
 import { RECURSOS, type Recurso } from '@/features/recursos';
 
 function RecursoRow({ recurso }: { recurso: Recurso }) {
   return (
-    <Link href={{ pathname: '/recurso/[id]', params: { id: recurso.id } }} asChild>
+    <Link href={recurso.href ?? { pathname: '/recurso/[id]', params: { id: recurso.id } }} asChild>
       <Pressable accessibilityRole="button">
         <Card style={styles.row}>
           <View style={styles.icon}>
@@ -26,6 +27,7 @@ function RecursoRow({ recurso }: { recurso: Recurso }) {
 }
 
 export default function RecursosScreen() {
+  const { account, signOut } = useAccount();
   return (
     <Screen>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -56,6 +58,15 @@ export default function RecursosScreen() {
             <RecursoRow key={r.id} recurso={r} />
           ))}
         </View>
+
+        <View style={styles.account}>
+          {account.status === 'ready' ? (
+            <AppText variant="caption" style={{ textAlign: 'center' }}>
+              {account.shop.name} · {account.email}
+            </AppText>
+          ) : null}
+          <Button variant="ghost" label="Sair da conta" onPress={signOut} />
+        </View>
       </ScrollView>
     </Screen>
   );
@@ -65,6 +76,7 @@ const styles = StyleSheet.create({
   content: { padding: Spacing.three, paddingBottom: Spacing.five, gap: Spacing.three },
   featured: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
   list: { gap: Spacing.two },
+  account: { gap: Spacing.two, marginTop: Spacing.three },
   row: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
   icon: {
     width: 44,

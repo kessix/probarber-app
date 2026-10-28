@@ -1,12 +1,31 @@
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react';
+import { Alert, AppState } from 'react-native';
 
-import { addDays, startOfToday, toDateKey } from '@/lib/format';
+import { useAccount } from '@/features/account/account-context';
+import { addDays, formatTime, startOfToday, toDateKey } from '@/lib/format';
+import { supabase } from '@/lib/supabase';
 
-import type { AgendaSettings, Appointment, BookingMode, PaymentMethod } from './types';
+import type {
+  AgendaSettings,
+  Appointment,
+  AppointmentStatus,
+  BookingMode,
+  Payment,
+  PaymentMethod,
+} from './types';
 
 type AgendaContextValue = {
   settings: AgendaSettings;
   appointments: Appointment[];
+  refresh: () => Promise<void>;
   setBookingMode: (mode: BookingMode) => void;
   completeAppointment: (id: string) => void;
   cancelAppointment: (id: string) => void;
@@ -16,43 +35,117 @@ type AgendaContextValue = {
 
 const AgendaContext = createContext<AgendaContextValue | null>(null);
 
-/** Dados de exemplo até existir backend. Cobrem os três tipos de pagamento. */
-function buildMockAppointments(): Appointment[] {
-  const today = startOfToday();
-  const day = (offset: number) => toDateKey(addDays(today, offset));
-  return [
-    { id: 'a1', date: day(0), time: '09:00', clientName: 'Davi', service: 'Corte + barba', price: 70, status: 'concluido', payment: { status: 'pago', method: 'pix', online: true } },
-    { id: 'a2', date: day(0), time: '10:00', clientName: 'Lucas', service: 'Degradê', price: 45, status: 'agendado', payment: { status: 'pago', method: 'pix', online: true } },
-    { id: 'a3', date: day(0), time: '10:30', clientName: 'Caio', service: 'Barba', price: 35, status: 'agendado', payment: { status: 'pendente' } },
-    { id: 'a4', date: day(0), time: '14:00', clientName: 'Rafa', service: 'Corte', price: 45, status: 'agendado', payment: { status: 'pendente' } },
-    { id: 'a5', date: day(0), time: '16:00', clientName: 'Bruno', service: 'Corte', price: 45, status: 'agendado', payment: { status: 'nao_aplicavel' } },
-    { id: 'a6', date: day(1), time: '09:30', clientName: 'Matheus', service: 'Corte + barba', price: 70, status: 'agendado', payment: { status: 'pago', method: 'pix', online: true } },
-    { id: 'a7', date: day(1), time: '11:00', clientName: 'Felipe', service: 'Degradê', price: 45, status: 'agendado', payment: { status: 'pendente' } },
-    { id: 'a8', date: day(2), time: '15:00', clientName: 'Anderson', service: 'Barba', price: 35, status: 'agendado', payment: { status: 'nao_aplicavel' } },
-  ];
+type Row = {
+  id: string;
+  starts_at: string;
+  client_name: string;
+  service_name: string;
+  price_cents: number;
+  status: AppointmentStatus;
+  payment_status: 'nao_aplicavel' | 'pendente' | 'pago';
+  payment_method: PaymentMethod | null;
+  payment_online: boolean;
+};
+
+const COLUMNS =
+  'id, starts_at, client_name, service_name, price_cents, status, payment_status, payment_method, payment_online';
+
+// Pendências antigas ainda precisam aparecer, então a agenda carrega os últimos 30 dias.
+const HISTORY_DAYS = 30;
+
+function toPayment(row: Row): Payment {
+  if (row.payment_status === 'pago') {
+    return { status: 'pago', method: row.payment_method ?? 'pix', online: row.payment_online };
+  }
+  return { status: row.payment_status };
 }
 
-export function AgendaProvider({ children }: { children: ReactNode }) {
-  const [settings, setSettings] = useState<AgendaSettings>({
-    bookingMode: 'pagamento_opcional',
-  });
-  const [appointments, setAppointments] = useState<Appointment[]>(buildMockAppointments);
+function fromRow(row: Row): Appointment {
+  const start = new Date(row.starts_at);
+  return {
+    id: row.id,
+    date: toDateKey(start),
+    time: formatTime(start),
+    clientName: row.client_name,
+    service: row.service_name,
+    price: row.price_cents / 100,
+    status: row.status,
+    payment: toPayment(row),
+  };
+}
 
-  const update = useCallback((id: string, patch: (a: Appointment) => Appointment) => {
-    setAppointments((list) => list.map((a) => (a.id === id ? patch(a) : a)));
-  }, []);
+/** Busca a agenda da barbearia. Devolve null (e avisa o barbeiro) se falhar. */
+async function fetchAppointments(shopId: string): Promise<Appointment[] | null> {
+  const since = addDays(startOfToday(), -HISTORY_DAYS).toISOString();
+  const { data, error } = await supabase
+    .from('appointments')
+    .select(COLUMNS)
+    .eq('barbershop_id', shopId)
+    .gte('starts_at', since)
+    .order('starts_at')
+    .returns<Row[]>();
+  if (error) {
+    Alert.alert('Não foi possível carregar a agenda', 'Verifique a internet e puxe a tela para atualizar.');
+    return null;
+  }
+  return data.map(fromRow);
+}
+
+/** A agenda é da barbearia do barbeiro logado. Remonte com `key` ao trocar de barbearia. */
+export function AgendaProvider({ children }: { children: ReactNode }) {
+  const { account, updateBookingMode } = useAccount();
+  const shop = account.status === 'ready' ? account.shop : null;
+  const shopId = shop?.id ?? null;
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+
+  const refresh = useCallback(async () => {
+    if (!shopId) return;
+    const rows = await fetchAppointments(shopId);
+    if (rows) setAppointments(rows);
+  }, [shopId]);
+
+  useEffect(() => {
+    if (!shopId) return;
+    let active = true;
+    const load = () =>
+      fetchAppointments(shopId).then((rows) => {
+        if (active && rows) setAppointments(rows);
+      });
+    void load();
+    // Agendamentos novos chegam pelo site: recarrega quando o app volta ao primeiro plano.
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') void load();
+    });
+    return () => {
+      active = false;
+      sub.remove();
+    };
+  }, [shopId]);
+
+  const mutate = useCallback(
+    async (id: string, patch: Record<string, unknown>) => {
+      const { error } = await supabase.from('appointments').update(patch).eq('id', id);
+      if (error) {
+        Alert.alert('Não foi possível salvar', 'Tente de novo.');
+        return;
+      }
+      await refresh();
+    },
+    [refresh],
+  );
 
   const value = useMemo<AgendaContextValue>(
     () => ({
-      settings,
+      settings: { bookingMode: shop?.bookingMode ?? 'comum' },
       appointments,
-      setBookingMode: (bookingMode) => setSettings((s) => ({ ...s, bookingMode })),
-      completeAppointment: (id) => update(id, (a) => ({ ...a, status: 'concluido' })),
-      cancelAppointment: (id) => update(id, (a) => ({ ...a, status: 'cancelado' })),
+      refresh,
+      setBookingMode: (mode) => void updateBookingMode(mode),
+      completeAppointment: (id) => void mutate(id, { status: 'concluido' }),
+      cancelAppointment: (id) => void mutate(id, { status: 'cancelado' }),
       registerPayment: (id, method) =>
-        update(id, (a) => ({ ...a, payment: { status: 'pago', method, online: false } })),
+        void mutate(id, { payment_status: 'pago', payment_method: method, payment_online: false }),
     }),
-    [settings, appointments, update],
+    [shop?.bookingMode, appointments, refresh, updateBookingMode, mutate],
   );
 
   return <AgendaContext.Provider value={value}>{children}</AgendaContext.Provider>;
