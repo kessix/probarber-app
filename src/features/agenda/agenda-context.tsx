@@ -57,6 +57,7 @@ function toPayment(row: Row): Payment {
   if (row.payment_status === 'pago') {
     return { status: 'pago', method: row.payment_method ?? 'pix', online: row.payment_online };
   }
+  if (row.payment_status === 'pendente') return { status: 'pendente', online: row.payment_online };
   return { status: row.payment_status };
 }
 

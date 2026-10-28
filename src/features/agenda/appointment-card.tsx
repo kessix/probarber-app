@@ -15,7 +15,9 @@ function PaymentBadge({ payment }: { payment: Appointment['payment'] }) {
     const where = payment.online ? 'no app' : 'na barbearia';
     return <Pill tone="green" label={`Pago ${where} · ${PAYMENT_METHOD_LABEL[payment.method]}`} />;
   }
-  if (payment.status === 'pendente') return <Pill label="Pagar na barbearia" />;
+  if (payment.status === 'pendente') {
+    return <Pill label={payment.online ? 'Aguardando Pix' : 'Pagar na barbearia'} />;
+  }
   return null;
 }
 

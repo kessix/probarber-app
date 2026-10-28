@@ -11,7 +11,8 @@ export type PaymentMethod = 'pix' | 'dinheiro';
 
 export type Payment =
   | { status: 'nao_aplicavel' }
-  | { status: 'pendente' }
+  /** online: o cliente escolheu pagar por Pix no site e o pagamento ainda não foi confirmado. */
+  | { status: 'pendente'; online?: boolean }
   | { status: 'pago'; method: PaymentMethod; online: boolean };
 
 export type AppointmentStatus = 'agendado' | 'concluido' | 'cancelado';
