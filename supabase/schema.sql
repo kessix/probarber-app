@@ -159,3 +159,8 @@ revoke all on function public.taken_slots(text, date) from public;
 revoke all on function public.create_appointment(text, uuid, timestamptz, text, text, boolean) from public;
 grant execute on function public.taken_slots(text, date) to anon, authenticated;
 grant execute on function public.create_appointment(text, uuid, timestamptz, text, text, boolean) to anon, authenticated;
+
+-- ------------------------------------------------------------ Pix (migração) ---
+-- Liga a cobrança Pix (AbacatePay) ao agendamento, para confirmar o pagamento sozinho.
+-- Quem grava aqui é o servidor do site, com a chave secreta. O público não lê esta tabela.
+alter table public.appointments add column if not exists pix_charge_id text unique;
