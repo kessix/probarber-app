@@ -75,7 +75,7 @@ export default function ConfiguracaoAgendaScreen() {
               </View>
             </Section>
 
-            <Section title="Fechar a agenda em dias específicos">
+            <Section title="Fechar dias ou horários">
               <TimeOffEditor professionalId={professional.id} />
             </Section>
 
