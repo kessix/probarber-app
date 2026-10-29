@@ -21,7 +21,7 @@ Requisito: os templates "Confirm sign up" e "Magic link or OTP" do Supabase usam
 ### 1.2 Agenda (Home) ✅ 🧪
 - Cabeçalho com a data em destaque e "Hoje / Amanhã / Dia selecionado".
 - Três abas, sempre visíveis: **Dia** (seletor dos próximos 14 dias, totais do dia), **Pendências (n)** (pagamentos a receber na
-  barbearia) e **Cancelados (n)**. Cancelados ficam fora da lista do dia.
+  barbearia, com filtros **Hoje**, **Próximos dias** e **Anteriores**, cada um com contagem; abre em Hoje) e **Cancelados (n)**. Cancelados ficam fora da lista do dia.
 - Totais do dia: atendimentos, recebido e a receber. Em **todos** os modos, inclusive o comum, o agendamento nasce como pendência até o barbeiro dar baixa em Pix, dinheiro ou cartão.
 - No cartão do agendamento: **concluir**, **cancelar**, **dar baixa no pagamento** (Pix, dinheiro ou cartão) e **bloquear cliente**.
 - Puxar para atualizar. Os dados vêm do Supabase (RLS: só a própria barbearia).

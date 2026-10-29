@@ -3,7 +3,7 @@ import { Link } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 
-import { AppText, Screen } from '@/components/ui';
+import { AppText, Chip, Screen } from '@/components/ui';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 import { useAgenda } from '@/features/agenda/agenda-context';
 import { AppointmentCard } from '@/features/agenda/appointment-card';
@@ -20,6 +20,7 @@ import {
 } from '@/lib/format';
 
 type View_ = 'dia' | 'pendencias' | 'cancelados';
+type PendingFilter = 'hoje' | 'proximos' | 'anteriores';
 
 const byDateTime = (a: Appointment, b: Appointment) =>
   `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`);
@@ -42,9 +43,17 @@ export default function AgendaScreen() {
   const days = useMemo(() => Array.from({ length: 14 }, (_, i) => addDays(today, i)), [today]);
   const [selected, setSelected] = useState(toDateKey(today));
   const [view, setView] = useState<View_>('dia');
+  const [pendingFilter, setPendingFilter] = useState<PendingFilter>('hoje');
 
   const active = appointments.filter((a) => a.status !== 'cancelado');
   const pending = active.filter((a) => a.payment.status === 'pendente').sort(byDateTime);
+  const todayKey = toDateKey(today);
+  const pendingToday = pending.filter((a) => a.date === todayKey);
+  const pendingNext = pending.filter((a) => a.date > todayKey);
+  // Atendimentos de dias passados que ainda não foram recebidos.
+  const pendingPast = pending.filter((a) => a.date < todayKey).sort((a, b) => byDateTime(b, a));
+  const pendingList =
+    pendingFilter === 'hoje' ? pendingToday : pendingFilter === 'proximos' ? pendingNext : pendingPast;
   const cancelled = appointments.filter((a) => a.status === 'cancelado').sort((a, b) => byDateTime(b, a));
   const dayActive = appointments.filter((a) => a.date === selected && a.status !== 'cancelado').sort(byDateTime);
   const dayList = dayActive;
@@ -56,7 +65,7 @@ export default function AgendaScreen() {
     .filter((a) => a.payment.status === 'pendente')
     .reduce((sum, a) => sum + a.price, 0);
 
-  const list = view === 'dia' ? dayList : view === 'pendencias' ? pending : cancelled;
+  const list = view === 'dia' ? dayList : view === 'pendencias' ? pendingList : cancelled;
   const selectedDate = fromDateKey(selected);
   const dayLabel =
     selected === toDateKey(today)
@@ -130,6 +139,26 @@ export default function AgendaScreen() {
           </Pressable>
         </View>
 
+        {view === 'pendencias' ? (
+          <View style={styles.filters}>
+            <Chip
+              label={`Hoje (${pendingToday.length})`}
+              selected={pendingFilter === 'hoje'}
+              onPress={() => setPendingFilter('hoje')}
+            />
+            <Chip
+              label={`Próximos dias (${pendingNext.length})`}
+              selected={pendingFilter === 'proximos'}
+              onPress={() => setPendingFilter('proximos')}
+            />
+            <Chip
+              label={`Anteriores (${pendingPast.length})`}
+              selected={pendingFilter === 'anteriores'}
+              onPress={() => setPendingFilter('anteriores')}
+            />
+          </View>
+        ) : null}
+
         {view === 'dia' ? (
           <>
             <ScrollView
@@ -170,7 +199,11 @@ export default function AgendaScreen() {
               {view === 'dia'
                 ? 'Nenhum agendamento neste dia.'
                 : view === 'pendencias'
-                  ? 'Nenhuma pendência. Tudo recebido!'
+                  ? pendingFilter === 'hoje'
+                    ? 'Nenhuma pendência para hoje.'
+                    : pendingFilter === 'proximos'
+                      ? 'Nenhuma pendência nos próximos dias.'
+                      : 'Nenhuma pendência anterior. Tudo recebido!'
                   : 'Nenhum agendamento cancelado.'}
             </AppText>
           ) : (
@@ -215,6 +248,7 @@ const styles = StyleSheet.create({
   segmentOn: { backgroundColor: Colors.goldSoft },
   segmentText: { fontFamily: Fonts.medium, color: Colors.muted },
   segmentTextOn: { color: Colors.gold },
+  filters: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
   days: { gap: Spacing.two },
   day: {
     width: 52,
