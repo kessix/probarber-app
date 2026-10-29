@@ -19,7 +19,7 @@ import {
   weekdayInitial,
 } from '@/lib/format';
 
-type View_ = 'dia' | 'pendencias';
+type View_ = 'dia' | 'pendencias' | 'cancelados';
 
 const byDateTime = (a: Appointment, b: Appointment) =>
   `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`);
@@ -46,8 +46,9 @@ export default function AgendaScreen() {
   const withPayments = settings.bookingMode !== 'comum';
   const active = appointments.filter((a) => a.status !== 'cancelado');
   const pending = active.filter((a) => a.payment.status === 'pendente').sort(byDateTime);
-  const dayList = appointments.filter((a) => a.date === selected).sort(byDateTime);
-  const dayActive = dayList.filter((a) => a.status !== 'cancelado');
+  const cancelled = appointments.filter((a) => a.status === 'cancelado').sort((a, b) => byDateTime(b, a));
+  const dayActive = appointments.filter((a) => a.date === selected && a.status !== 'cancelado').sort(byDateTime);
+  const dayList = dayActive;
 
   const received = dayActive
     .filter((a) => a.payment.status === 'pago')
@@ -57,7 +58,7 @@ export default function AgendaScreen() {
     .reduce((sum, a) => sum + a.price, 0);
   const expected = dayActive.reduce((sum, a) => sum + a.price, 0);
 
-  const list = view === 'dia' ? dayList : pending;
+  const list = view === 'dia' ? dayList : view === 'pendencias' ? pending : cancelled;
   const selectedDate = fromDateKey(selected);
   const dayLabel =
     selected === toDateKey(today)
@@ -86,10 +87,14 @@ export default function AgendaScreen() {
           <View style={{ flex: 1 }}>
             <AppText variant="label">Agenda</AppText>
             <AppText variant="display" style={styles.dateTitle} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.5}>
-              {view === 'dia' ? formatDayLong(selectedDate) : 'Pendências'}
+              {view === 'dia' ? formatDayLong(selectedDate) : view === 'pendencias' ? 'Pendências' : 'Cancelados'}
             </AppText>
             <AppText variant="caption">
-              {view === 'dia' ? dayLabel : 'Pagamentos a receber na barbearia'}
+              {view === 'dia'
+                ? dayLabel
+                : view === 'pendencias'
+                  ? 'Pagamentos a receber na barbearia'
+                  : 'Agendamentos cancelados'}
             </AppText>
           </View>
           <Link href="/agenda/configuracao" asChild>
@@ -118,6 +123,15 @@ export default function AgendaScreen() {
               </AppText>
             </Pressable>
           ) : null}
+          <Pressable
+            onPress={() => setView('cancelados')}
+            style={[styles.segmentItem, view === 'cancelados' && styles.segmentOn]}>
+            <AppText
+              variant="body"
+              style={[styles.segmentText, view === 'cancelados' && styles.segmentTextOn]}>
+              Cancelados ({cancelled.length})
+            </AppText>
+          </Pressable>
         </View>
 
         {view === 'dia' ? (
@@ -163,14 +177,18 @@ export default function AgendaScreen() {
         <View style={styles.list}>
           {list.length === 0 ? (
             <AppText variant="body" muted style={styles.empty}>
-              {view === 'dia' ? 'Nenhum agendamento neste dia.' : 'Nenhuma pendência. Tudo recebido!'}
+              {view === 'dia'
+                ? 'Nenhum agendamento neste dia.'
+                : view === 'pendencias'
+                  ? 'Nenhuma pendência. Tudo recebido!'
+                  : 'Nenhum agendamento cancelado.'}
             </AppText>
           ) : (
             list.map((a) => (
               <AppointmentCard
                 key={a.id}
                 appointment={a}
-                dateLabel={view === 'pendencias' ? formatDayShort(fromDateKey(a.date)) : undefined}
+                dateLabel={view !== 'dia' ? formatDayShort(fromDateKey(a.date)) : undefined}
               />
             ))
           )}
