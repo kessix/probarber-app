@@ -26,6 +26,21 @@ Requisito: os templates "Confirm sign up" e "Magic link or OTP" do Supabase usam
 - No cartão do agendamento: **concluir**, **cancelar**, **dar baixa no pagamento** (Pix, dinheiro ou cartão) e **bloquear cliente**.
 - Puxar para atualizar. Os dados vêm do Supabase (RLS: só a própria barbearia).
 
+### 1.2.1 Pendências de pagamento ✅ 🧪
+Controle de quem ainda não pagou, igual em **todos** os modos de agendamento.
+
+1. **Nasce pendente**: todo agendamento novo começa com pagamento `pendente`. A exceção é o Pix pago no site, que vira `pago` na hora. No modo comum nada é cobrado pelo app, mas o agendamento também entra em Pendências, para o barbeiro ter o controle (migração 007).
+2. **Onde aparece**: na aba **Pendências (n)** da Home, que mostra o total de pendências e tem três filtros:
+   - **Hoje (n)**: atendimentos de hoje (abre por padrão).
+   - **Próximos dias (n)**: de amanhã em diante, por data.
+   - **Anteriores (n)**: dias passados ainda sem baixa, do mais recente ao mais antigo.
+3. **Dar baixa**: ao tocar no atendimento, "Receber como" oferece **Pix**, **Dinheiro** ou **Cartão**. O agendamento passa a `pago` (pago na barbearia) e sai da lista.
+4. **Fora da lista**: agendamentos cancelados não contam como pendência e ficam na aba Cancelados.
+5. **Pix aguardando**: quem escolheu pagar por Pix e ainda não pagou aparece como "Aguardando Pix"; ao pagar, a baixa é automática.
+6. **Totais do dia** (aba Dia): **Recebido** soma os pagos e **A receber** soma os pendentes do dia selecionado.
+
+Limite atual: cancelar um agendamento já pago por Pix não estorna o valor (ver [pendencias.md](pendencias.md)).
+
 ### 1.3 Configuração da agenda ✅ 🧪
 Acessada pelo ícone na Home e pelo card em destaque em Recursos.
 - **Horário de atendimento** por dia da semana: início, almoço (opcional) e fim, de 30 em 30 min; "copiar para os outros dias abertos".
@@ -59,9 +74,9 @@ Os itens 🕓 abrem uma tela "em breve".
 3. **Serviço**: catálogo com foto, duração e preço.
 4. **Dia e horário**: só aparecem dias com vaga dentro do prazo definido pelo barbeiro; o preço mostrado é o do dia escolhido.
 5. **Confirmação** conforme o modo da barbearia:
-   - *comum*: confirma direto.
+   - *comum*: confirma direto, sem pagamento no app; o agendamento entra em **Pendências** para o barbeiro receber na barbearia.
    - *pagamento obrigatório*: gera o Pix e só confirma quando pago.
-   - *pagar no app ou na barbearia*: o cliente escolhe Pix agora ou pagar no local (fica pendência para o barbeiro).
+   - *pagar no app ou na barbearia*: o cliente escolhe Pix agora ou pagar no local (neste caso fica em **Pendências** para o barbeiro).
 6. **Pix**: QR Code e copia-e-cola; a tela consulta o pagamento a cada 3 s e confirma sozinha. Em modo de teste há o botão "Simular pagamento".
 7. Tela final com resumo. Se aceitou notificações, recebe o **e-mail de confirmação** (uma vez).
 
