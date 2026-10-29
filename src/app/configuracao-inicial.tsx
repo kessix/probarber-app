@@ -1,9 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Link, router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Alert, ScrollView, Share, StyleSheet, View } from 'react-native';
+import { Alert, Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
 
-import { AppText, Button, Card, Photo, Screen } from '@/components/ui';
+import { AppText, Button, Card, Photo, Screen, TextField } from '@/components/ui';
 import { Colors, Spacing } from '@/constants/theme';
 import { useAccount, useShop } from '@/features/account/account-context';
 import { IntervalPicker } from '@/features/agenda/config/interval-picker';
@@ -11,12 +11,14 @@ import { WindowStepper } from '@/features/agenda/config/window-stepper';
 import { WorkingHoursEditor } from '@/features/agenda/config/working-hours-editor';
 import { useProfessional } from '@/features/agenda/use-professional';
 import { formatBRL } from '@/lib/format';
+import { maskPhone } from '@/lib/money';
 import { SITE_URL } from '@/lib/slug';
 import { supabase } from '@/lib/supabase';
+import { pickAndUploadImage } from '@/lib/upload';
 import { useRemote } from '@/lib/use-remote';
 
-type Step = 'agenda' | 'servicos' | 'pronto';
-const STEPS: Step[] = ['agenda', 'servicos', 'pronto'];
+type Step = 'agenda' | 'servicos' | 'marca' | 'pronto';
+const STEPS: Step[] = ['agenda', 'servicos', 'marca', 'pronto'];
 
 // Sugestões para começar rápido; o barbeiro ajusta preço e duração depois.
 const SUGGESTIONS = [
@@ -36,14 +38,21 @@ export default function ConfiguracaoInicialScreen() {
     <Screen>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         <View>
-          <AppText variant="label">Passo {number} de 4</AppText>
+          <AppText variant="label">Passo {number} de 5</AppText>
           <AppText variant="display">
-            {step === 'agenda' ? 'Seu horário' : step === 'servicos' ? 'Seus serviços' : 'Tudo pronto!'}
+            {step === 'agenda'
+              ? 'Seu horário'
+              : step === 'servicos'
+                ? 'Seus serviços'
+                : step === 'marca'
+                  ? 'Sua marca'
+                  : 'Tudo pronto!'}
           </AppText>
         </View>
 
         {step === 'agenda' ? <AgendaStep onNext={() => setStep('servicos')} /> : null}
-        {step === 'servicos' ? <ServicesStep onNext={() => setStep('pronto')} /> : null}
+        {step === 'servicos' ? <ServicesStep onNext={() => setStep('marca')} /> : null}
+        {step === 'marca' ? <BrandStep onNext={() => setStep('pronto')} /> : null}
         {step === 'pronto' ? <DoneStep /> : null}
       </ScrollView>
     </Screen>
@@ -180,6 +189,72 @@ function ServicesStep({ onNext }: { onNext: () => void }) {
   );
 }
 
+function BrandStep({ onNext }: { onNext: () => void }) {
+  const shop = useShop();
+  const { updateShop } = useAccount();
+  const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [phone, setPhone] = useState(maskPhone(shop.phone ?? ''));
+  const [address, setAddress] = useState(shop.address ?? '');
+  const phoneDigits = phone.replace(/\D/g, '');
+
+  async function changeLogo() {
+    setUploading(true);
+    const url = await pickAndUploadImage({ shopId: shop.id, name: 'logo', aspect: [1, 1], width: 600 });
+    if (url) await updateShop({ logoUrl: url });
+    setUploading(false);
+  }
+
+  async function next() {
+    if (phoneDigits && (phoneDigits.length < 10 || phoneDigits.length > 11)) {
+      return Alert.alert('Telefone inválido', 'Digite o DDD e o número, como (11) 91234-5678.');
+    }
+    const patch = { phone: phoneDigits || null, address: address.trim() || null };
+    if (patch.phone !== shop.phone || patch.address !== shop.address) {
+      setSaving(true);
+      const ok = await updateShop(patch);
+      setSaving(false);
+      if (!ok) return;
+    }
+    onNext();
+  }
+
+  return (
+    <>
+      <AppText variant="body" muted>
+        A logo e os contatos aparecem no topo do seu link de agendamento. Tudo aqui é opcional e dá para mudar depois em
+        Configurações.
+      </AppText>
+
+      <Pressable accessibilityRole="button" onPress={changeLogo} disabled={uploading} style={styles.row}>
+        <Photo uri={shop.logoUrl} size={88} icon="storefront-outline" rounded />
+        <View style={{ flex: 1, gap: 2 }}>
+          <AppText variant="title">{uploading ? 'Enviando…' : shop.logoUrl ? 'Trocar logo' : 'Adicionar logo'}</AppText>
+          <AppText variant="caption">Escolha uma imagem da galeria (até 2 MB).</AppText>
+        </View>
+      </Pressable>
+
+      <TextField
+        label="Telefone / WhatsApp"
+        value={phone}
+        onChangeText={(t) => setPhone(maskPhone(t))}
+        keyboardType="phone-pad"
+        placeholder="Exemplo: (11) 91234-5678"
+      />
+      <TextField
+        label="Endereço"
+        value={address}
+        onChangeText={setAddress}
+        placeholder="Exemplo: Rua das Flores, 120 - Centro"
+        maxLength={200}
+      />
+
+      <Button label={saving ? 'Salvando…' : 'Continuar'} disabled={saving || uploading} onPress={next} />
+      <Button variant="ghost" label="Pular" disabled={saving || uploading} onPress={onNext} />
+    </>
+  );
+}
+
 function DoneStep() {
   const shop = useShop();
   const url = `${SITE_URL}/${shop.slug}`;
@@ -199,7 +274,7 @@ function DoneStep() {
         onPress={() => Share.share({ message: `Agende seu horário na ${shop.name}: ${url}` })}
       />
       <AppText variant="caption">
-        Em Configurações você coloca a logo, o endereço e as redes sociais. Em Recursos, define como o cliente paga.
+        Em Configurações você completa o cadastro com Instagram, Facebook e avaliações do Google. Em Recursos, define como o cliente paga.
       </AppText>
       <Button variant="ghost" label="Abrir minha agenda" onPress={() => router.replace('/')} />
     </>

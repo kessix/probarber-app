@@ -7,13 +7,14 @@ Legenda: ✅ pronto e testado · 🧪 pronto, falta validar no aparelho/navegado
 ### 1.1 Cadastro e login ✅
 1. `entrar`: o barbeiro informa o e-mail e recebe um **código de 8 dígitos** (Supabase Auth, enviado via SMTP do Resend).
 2. Digita o código; a sessão fica salva no aparelho (AsyncStorage).
-3. **Passo 1 de 4, `onboarding`** (só na primeira vez): nome da barbearia e **endereço do link** (slug). O app confere se o slug está livre
+3. **Passo 1 de 5, `onboarding`** (só na primeira vez): nome da barbearia e **endereço do link** (slug). O app confere se o slug está livre
    (3 a 30 caracteres, minúsculas, números e hífen; reservados: admin, api, login, cadastro, app).
 4. O banco cria a barbearia e, por gatilho, o **profissional dono** com horário padrão seg–sáb 09:00–18:00, almoço 12:00–13:00.
-5. **Passo 2 de 4, `configuracao-inicial`, Seu horário**: ajustar dias, início, almoço e fim, intervalo entre horários e quantos dias a agenda fica aberta.
-6. **Passo 3 de 4, Seus serviços**: usar as sugestões (Corte, Barba, Corte + barba) ou adicionar o próprio serviço; dá para pular e fazer depois.
-7. **Passo 4 de 4, Tudo pronto**: mostra o link e o botão de compartilhar. Ao concluir o passo 3, o banco marca `barbershops.onboarded_at` e o app não repete o passo a passo.
-8. O acesso às telas é decidido pelo estado da conta (sem sessão, sem barbearia, pronta) com `Stack.Protected`; conta pronta com `onboarded_at` vazio é redirecionada ao passo a passo.
+5. **Passo 2 de 5, `configuracao-inicial`, Seu horário**: ajustar dias, início, almoço e fim, intervalo entre horários e quantos dias a agenda fica aberta.
+6. **Passo 3 de 5, Seus serviços**: usar as sugestões (Corte, Barba, Corte + barba) ou adicionar o próprio serviço; dá para pular e fazer depois.
+7. **Passo 4 de 5, Sua marca** (opcional, dá para pular): logo, telefone/WhatsApp e endereço, que aparecem no topo do link do cliente.
+8. **Passo 5 de 5, Tudo pronto**: mostra o link e o botão de compartilhar. Ao concluir o passo 3, o banco marca `barbershops.onboarded_at` e o app não repete o passo a passo.
+9. O acesso às telas é decidido pelo estado da conta (sem sessão, sem barbearia, pronta) com `Stack.Protected`; conta pronta com `onboarded_at` vazio é redirecionada ao passo a passo.
 
 Requisito: os templates "Confirm sign up" e "Magic link or OTP" do Supabase usam `{{ .Token }}`.
 
@@ -76,7 +77,10 @@ Erros tratados: horário acabou de ser ocupado, e-mail inválido, cliente bloque
 Enviado por `POST /api/appointments/{id}/notify` após confirmar/pagar, só se o cliente aceitou notificações, uma única vez, com serviço, data, valor, endereço, situação do pagamento e link para "Meus agendamentos".
 
 ## 3. Landing `/` ✅
-Apresentação do produto, recursos, destaque para baixar o app nas lojas (botões apontam para `#baixar` até a publicação) e `/admin` reservado.
+Apresentação do produto com foco no diferencial: agenda com pagamento flexível (Pix na hora ou na barbearia, com baixa em Pix, dinheiro ou cartão).
+Seções: principais recursos (4 cards com telas do app), funcionalidades (7 disponíveis e 5 "em breve"), como funciona (3 passos e números reais do produto),
+preço (30 dias de teste grátis, R$ 40,00 por mês por profissional), perguntas frequentes e botões de download. Sem depoimentos nem métricas inventadas: só entram quando forem reais.
+Os botões das lojas apontam para `#baixar` até a publicação. `/admin` está reservado.
 
 ## 4. A desenvolver 🕓
 Detalhes e responsáveis em [pendencias.md](pendencias.md).

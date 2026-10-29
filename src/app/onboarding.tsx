@@ -61,7 +61,7 @@ export default function OnboardingScreen() {
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <View>
-            <AppText variant="label">Passo 1 de 4</AppText>
+            <AppText variant="label">Passo 1 de 5</AppText>
             <AppText variant="display">Sua barbearia</AppText>
             <AppText variant="body" muted>
               Esse é o nome que seus clientes veem e o endereço do seu link de agendamento.

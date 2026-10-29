@@ -36,7 +36,7 @@ export default function MeuLinkScreen() {
         <Button variant="ghost" label="Alterar link" onPress={() => router.push('/alterar-link')} />
 
         <AppText variant="caption">
-          O link começa a funcionar quando o site estiver publicado em {SITE_URL.replace('https://', '')}.
+          O link começa a funcionar imediatamente.
         </AppText>
       </View>
     </Screen>
