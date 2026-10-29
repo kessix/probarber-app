@@ -36,14 +36,13 @@ function Stat({ label, value }: { label: string; value: string }) {
 }
 
 export default function AgendaScreen() {
-  const { appointments, settings, refresh } = useAgenda();
+  const { appointments, refresh } = useAgenda();
   const [refreshing, setRefreshing] = useState(false);
   const today = useMemo(() => startOfToday(), []);
   const days = useMemo(() => Array.from({ length: 14 }, (_, i) => addDays(today, i)), [today]);
   const [selected, setSelected] = useState(toDateKey(today));
   const [view, setView] = useState<View_>('dia');
 
-  const withPayments = settings.bookingMode !== 'comum';
   const active = appointments.filter((a) => a.status !== 'cancelado');
   const pending = active.filter((a) => a.payment.status === 'pendente').sort(byDateTime);
   const cancelled = appointments.filter((a) => a.status === 'cancelado').sort((a, b) => byDateTime(b, a));
@@ -56,7 +55,6 @@ export default function AgendaScreen() {
   const toReceive = dayActive
     .filter((a) => a.payment.status === 'pendente')
     .reduce((sum, a) => sum + a.price, 0);
-  const expected = dayActive.reduce((sum, a) => sum + a.price, 0);
 
   const list = view === 'dia' ? dayList : view === 'pendencias' ? pending : cancelled;
   const selectedDate = fromDateKey(selected);
@@ -112,17 +110,15 @@ export default function AgendaScreen() {
               Dia
             </AppText>
           </Pressable>
-          {withPayments || pending.length > 0 ? (
-            <Pressable
-              onPress={() => setView('pendencias')}
-              style={[styles.segmentItem, view === 'pendencias' && styles.segmentOn]}>
-              <AppText
-                variant="body"
-                style={[styles.segmentText, view === 'pendencias' && styles.segmentTextOn]}>
-                Pendências ({pending.length})
-              </AppText>
-            </Pressable>
-          ) : null}
+          <Pressable
+            onPress={() => setView('pendencias')}
+            style={[styles.segmentItem, view === 'pendencias' && styles.segmentOn]}>
+            <AppText
+              variant="body"
+              style={[styles.segmentText, view === 'pendencias' && styles.segmentTextOn]}>
+              Pendências ({pending.length})
+            </AppText>
+          </Pressable>
           <Pressable
             onPress={() => setView('cancelados')}
             style={[styles.segmentItem, view === 'cancelados' && styles.segmentOn]}>
@@ -162,14 +158,8 @@ export default function AgendaScreen() {
 
             <View style={styles.stats}>
               <Stat label="Atendimentos" value={String(dayActive.length)} />
-              {withPayments ? (
-                <>
-                  <Stat label="Recebido" value={formatBRL(received)} />
-                  <Stat label="A receber" value={formatBRL(toReceive)} />
-                </>
-              ) : (
-                <Stat label="Previsto" value={formatBRL(expected)} />
-              )}
+              <Stat label="Recebido" value={formatBRL(received)} />
+              <Stat label="A receber" value={formatBRL(toReceive)} />
             </View>
           </>
         ) : null}

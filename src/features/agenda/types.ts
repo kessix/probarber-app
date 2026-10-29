@@ -40,7 +40,8 @@ export const BOOKING_MODES: { id: BookingMode; title: string; description: strin
   {
     id: 'comum',
     title: 'Agendamento comum',
-    description: 'O cliente escolhe o horário e confirma, sem pagar pelo app. Você recebe na barbearia.',
+    description:
+      'O cliente escolhe o horário e confirma, sem pagar pelo app. Você recebe na barbearia e dá baixa em Pendências.',
   },
   {
     id: 'pagamento_obrigatorio',

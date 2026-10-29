@@ -11,6 +11,7 @@ A 001 **nunca** deve ser rodada de novo depois das seguintes.
 | `004_meus_agendamentos.sql` | Código secreto por cliente e funções "Meus agendamentos" e cancelar |
 | `005_onboarding.sql` | `barbershops.onboarded_at`: marca que o barbeiro terminou a configuração inicial (lojas existentes já contam como concluídas) |
 | `006_pagamento_cartao.sql` | Libera `cartao` como forma de pagamento na baixa feita na barbearia |
+| `007_pendencia_no_comum.sql` | No agendamento comum o pagamento também nasce `pendente` (antes `nao_aplicavel`), para o barbeiro controlar em Pendências |
 
 ## Tabelas
 
