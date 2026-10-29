@@ -1,5 +1,7 @@
 # Pendências do ProBarber
 
+Visão geral em [README.md](README.md) e fluxos em [fluxos.md](fluxos.md).
+
 Cobre o app e o site. Atualizar ao concluir ou decidir algo.
 
 ## Decisão de negócio
@@ -13,6 +15,8 @@ Cobre o app e o site. Atualizar ao concluir ou decidir algo.
   (cancelado + pago) para resolver na mão até a regra existir.
 
 ## Falta construir
+- **Avisar o barbeiro quando o cliente cancela** (e-mail ou notificação push) e destacar no app os cancelados já pagos.
+- **Publicar nas lojas** (Google Play e App Store) e trocar `STORE_LINKS` no site.
 - **Lembrete por e-mail** antes do horário (colunas `reminder_sent_at` já existem). Precisa de tarefa agendada, por exemplo Vercel Cron.
 - **Pix abandonado**: o horário fica reservado para sempre. Falta expirar a reserva não paga.
 - **Webhook do Pix**: hoje o site confirma consultando o pagamento a cada 3 s enquanto a página está aberta.
