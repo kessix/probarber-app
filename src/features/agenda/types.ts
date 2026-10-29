@@ -7,7 +7,7 @@
  */
 export type BookingMode = 'comum' | 'pagamento_obrigatorio' | 'pagamento_opcional';
 
-export type PaymentMethod = 'pix' | 'dinheiro';
+export type PaymentMethod = 'pix' | 'dinheiro' | 'cartao';
 
 export type Payment =
   | { status: 'nao_aplicavel' }
@@ -58,4 +58,5 @@ export const BOOKING_MODES: { id: BookingMode; title: string; description: strin
 export const PAYMENT_METHOD_LABEL: Record<PaymentMethod, string> = {
   pix: 'Pix',
   dinheiro: 'Dinheiro',
+  cartao: 'Cartão',
 };

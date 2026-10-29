@@ -8,7 +8,7 @@ import { formatBRL } from '@/lib/format';
 import { useAgenda } from './agenda-context';
 import { PAYMENT_METHOD_LABEL, type Appointment, type PaymentMethod } from './types';
 
-const RECEIVE_METHODS: PaymentMethod[] = ['pix', 'dinheiro'];
+const RECEIVE_METHODS: PaymentMethod[] = ['pix', 'dinheiro', 'cartao'];
 
 function PaymentBadge({ payment }: { payment: Appointment['payment'] }) {
   if (payment.status === 'pago') {

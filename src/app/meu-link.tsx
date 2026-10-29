@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import { Share, StyleSheet, View } from 'react-native';
 
 import { AppText, Button, Card, Screen } from '@/components/ui';
@@ -32,6 +33,7 @@ export default function MeuLinkScreen() {
           label="Compartilhar link"
           onPress={() => Share.share({ message: `Agende seu horário na ${shop.name}: ${url}` })}
         />
+        <Button variant="ghost" label="Alterar link" onPress={() => router.push('/alterar-link')} />
 
         <AppText variant="caption">
           O link começa a funcionar quando o site estiver publicado em {SITE_URL.replace('https://', '')}.

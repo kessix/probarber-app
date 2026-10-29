@@ -9,6 +9,8 @@ A 001 **nunca** deve ser rodada de novo depois das seguintes.
 | `002_agenda_profissional.sql` | Profissionais, horários, folgas, preços por dia, clientes, perfil da barbearia, exclusão de sobreposição, funções de horário e agendamento, bucket `shop-assets` |
 | `003_bloqueio_por_horario.sql` | `time_off` com faixa de horas; `slot_candidates` respeita bloqueios parciais |
 | `004_meus_agendamentos.sql` | Código secreto por cliente e funções "Meus agendamentos" e cancelar |
+| `005_onboarding.sql` | `barbershops.onboarded_at`: marca que o barbeiro terminou a configuração inicial (lojas existentes já contam como concluídas) |
+| `006_pagamento_cartao.sql` | Libera `cartao` como forma de pagamento na baixa feita na barbearia |
 
 ## Tabelas
 
@@ -16,7 +18,7 @@ A 001 **nunca** deve ser rodada de novo depois das seguintes.
 Uma por barbeiro (`owner_id` único, ligado a `auth.users`).
 `slug` (único, 3–30, regex `^[a-z0-9][a-z0-9-]{1,28}[a-z0-9]$`, reservados bloqueados), `name`, `instagram`, `facebook`, `phone` (10–11 dígitos),
 `address`, `logo_url`, `google_review_url`, `brand_color`, `booking_mode` (`comum` | `pagamento_obrigatorio` | `pagamento_opcional`),
-`booking_window_days` (1–14, padrão 10). Colunas **obsoletas**: `opening_hour`, `closing_hour`, `closed_weekdays`.
+`booking_window_days` (1–14, padrão 10), `onboarded_at` (nulo = ainda falta a configuração inicial no app). Colunas **obsoletas**: `opening_hour`, `closing_hour`, `closed_weekdays`.
 
 ### `professionals`
 Quem atende. Hoje só o dono (`is_owner`, único por barbearia). `slot_interval_minutes` (10, 15, 20, 30, 45, 60), `active`, `photo_url`, `user_id` opcional (para a equipe futura).
@@ -43,7 +45,7 @@ Por barbearia, único por `(barbershop_id, email)` (e-mail em minúsculas). `nam
 ### `appointments`
 `barbershop_id`, `professional_id`, `client_id` (nulo em registros antigos), `service_id`, cópia de `service_name`, `price_cents`, `duration_minutes`
 (mudar o serviço depois não altera o histórico), `starts_at`, `ends_at`, `client_name`, `client_email`, `client_phone` (opcional),
-`status` (`agendado` | `concluido` | `cancelado`), `payment_status` (`nao_aplicavel` | `pendente` | `pago`), `payment_method` (`pix` | `dinheiro`),
+`status` (`agendado` | `concluido` | `cancelado`), `payment_status` (`nao_aplicavel` | `pendente` | `pago`), `payment_method` (`pix` | `dinheiro` | `cartao`),
 `payment_online`, `pix_charge_id` (único), `confirmation_sent_at`, `reminder_sent_at`, `created_at`.
 **Restrição `appointments_no_overlap`**: nunca dois agendamentos não cancelados se sobrepondo para o mesmo profissional (considera a duração).
 

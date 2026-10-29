@@ -1,19 +1,17 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
-import { AppText, Card, Chip, Screen, Stepper } from '@/components/ui';
+import { AppText, Card, Screen } from '@/components/ui';
 import { Colors, Spacing } from '@/constants/theme';
-import { useAccount, useShop } from '@/features/account/account-context';
+import { useShop } from '@/features/account/account-context';
 import { useAgenda } from '@/features/agenda/agenda-context';
+import { IntervalPicker } from '@/features/agenda/config/interval-picker';
 import { ServicesPicker } from '@/features/agenda/config/services-picker';
 import { TimeOffEditor } from '@/features/agenda/config/time-off-editor';
+import { WindowStepper } from '@/features/agenda/config/window-stepper';
 import { WorkingHoursEditor } from '@/features/agenda/config/working-hours-editor';
 import { BOOKING_MODES } from '@/features/agenda/types';
 import { useProfessional } from '@/features/agenda/use-professional';
-import { supabase } from '@/lib/supabase';
-
-const MAX_WINDOW_DAYS = 14;
-const INTERVALS = [10, 15, 20, 30, 45, 60];
 
 function Section({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
   return (
@@ -28,19 +26,8 @@ function Section({ title, hint, children }: { title: string; hint?: string; chil
 export default function ConfiguracaoAgendaScreen() {
   const { settings, setBookingMode } = useAgenda();
   const shop = useShop();
-  const { updateShop } = useAccount();
   const { data: professional, error, reload } = useProfessional(shop.id);
   const withPayment = settings.bookingMode !== 'comum';
-
-  async function setInterval(minutes: number) {
-    if (!professional) return;
-    const { error: err } = await supabase
-      .from('professionals')
-      .update({ slot_interval_minutes: minutes })
-      .eq('id', professional.id);
-    if (err) Alert.alert('Não foi possível salvar', 'Tente de novo.');
-    else reload();
-  }
 
   return (
     <Screen edges={[]}>
@@ -63,16 +50,11 @@ export default function ConfiguracaoAgendaScreen() {
             </Section>
 
             <Section title="Intervalo entre horários" hint="De quanto em quanto tempo começa um horário na agenda.">
-              <View style={styles.chips}>
-                {INTERVALS.map((minutes) => (
-                  <Chip
-                    key={minutes}
-                    label={`${minutes} min`}
-                    selected={professional.slotIntervalMinutes === minutes}
-                    onPress={() => void setInterval(minutes)}
-                  />
-                ))}
-              </View>
+              <IntervalPicker
+                professionalId={professional.id}
+                value={professional.slotIntervalMinutes}
+                onChanged={reload}
+              />
             </Section>
 
             <Section title="Fechar dias ou horários">
@@ -80,20 +62,7 @@ export default function ConfiguracaoAgendaScreen() {
             </Section>
 
             <Section title="Agenda aberta para os clientes">
-              <Card style={{ gap: Spacing.two }}>
-                <Stepper
-                  label="Dias à frente"
-                  value={shop.bookingWindowDays}
-                  min={1}
-                  max={MAX_WINDOW_DAYS}
-                  format={(n) => `${n} ${n === 1 ? 'dia' : 'dias'}`}
-                  onChange={(bookingWindowDays) => void updateShop({ bookingWindowDays })}
-                />
-                <AppText variant="caption">
-                  Seus clientes podem agendar de hoje até {shop.bookingWindowDays}{' '}
-                  {shop.bookingWindowDays === 1 ? 'dia' : 'dias'} à frente. O máximo é {MAX_WINDOW_DAYS}.
-                </AppText>
-              </Card>
+              <WindowStepper />
             </Section>
 
             <Section title="Serviços que você atende" hint="Só os serviços marcados aparecem para o cliente agendar.">
@@ -150,7 +119,6 @@ export default function ConfiguracaoAgendaScreen() {
 const styles = StyleSheet.create({
   content: { padding: Spacing.three, paddingBottom: Spacing.five, gap: Spacing.four },
   group: { gap: Spacing.two },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
   option: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.three },
   pix: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
   note: { textAlign: 'center' },

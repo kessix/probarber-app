@@ -27,10 +27,12 @@ export type Shop = {
   instagram: string | null;
   facebook: string | null;
   googleReviewUrl: string | null;
+  /** Já terminou a configuração inicial (horário e serviços). */
+  onboarded: boolean;
 };
 
 /** O que o barbeiro pode alterar na barbearia. */
-export type ShopSettings = Omit<Shop, 'id'>;
+export type ShopSettings = Omit<Shop, 'id' | 'onboarded'>;
 
 /**
  * Onde o barbeiro está no app:
@@ -51,6 +53,8 @@ type AccountContextValue = {
   signOut: () => Promise<void>;
   /** Salva campos da barbearia. Devolve false (e avisa o barbeiro) se o banco recusar. */
   updateShop: (patch: Partial<ShopSettings>) => Promise<boolean>;
+  /** Marca a configuração inicial como concluída. */
+  finishOnboarding: () => Promise<void>;
 };
 
 const AccountContext = createContext<AccountContextValue | null>(null);
@@ -67,10 +71,11 @@ type ShopRow = {
   instagram: string | null;
   facebook: string | null;
   google_review_url: string | null;
+  onboarded_at: string | null;
 };
 
 const SHOP_COLUMNS =
-  'id, slug, name, booking_mode, booking_window_days, logo_url, phone, address, instagram, facebook, google_review_url';
+  'id, slug, name, booking_mode, booking_window_days, logo_url, phone, address, instagram, facebook, google_review_url, onboarded_at';
 
 // Campo do app -> coluna do banco
 const COLUMN_OF: Record<keyof ShopSettings, string> = {
@@ -99,6 +104,7 @@ function toShop(row: ShopRow): Shop {
     instagram: row.instagram,
     facebook: row.facebook,
     googleReviewUrl: row.google_review_url,
+    onboarded: row.onboarded_at !== null,
   };
 }
 
@@ -149,6 +155,20 @@ export function AccountProvider({ children }: { children: ReactNode }) {
       },
       signOut: async () => {
         await supabase.auth.signOut();
+      },
+      finishOnboarding: async () => {
+        if (account.status !== 'ready') return;
+        const { error } = await supabase
+          .from('barbershops')
+          .update({ onboarded_at: new Date().toISOString() })
+          .eq('id', account.shop.id);
+        if (error) {
+          Alert.alert('Não foi possível concluir', 'Tente de novo.');
+          return;
+        }
+        setAccount((current) =>
+          current.status === 'ready' ? { ...current, shop: { ...current.shop, onboarded: true } } : current,
+        );
       },
       updateShop: async (patch) => {
         if (account.status !== 'ready') return false;

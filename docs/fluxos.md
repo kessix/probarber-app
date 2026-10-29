@@ -7,10 +7,13 @@ Legenda: ✅ pronto e testado · 🧪 pronto, falta validar no aparelho/navegado
 ### 1.1 Cadastro e login ✅
 1. `entrar`: o barbeiro informa o e-mail e recebe um **código de 8 dígitos** (Supabase Auth, enviado via SMTP do Resend).
 2. Digita o código; a sessão fica salva no aparelho (AsyncStorage).
-3. `onboarding` (só na primeira vez): nome da barbearia e **endereço do link** (slug). O app confere se o slug está livre
+3. **Passo 1 de 4, `onboarding`** (só na primeira vez): nome da barbearia e **endereço do link** (slug). O app confere se o slug está livre
    (3 a 30 caracteres, minúsculas, números e hífen; reservados: admin, api, login, cadastro, app).
 4. O banco cria a barbearia e, por gatilho, o **profissional dono** com horário padrão seg–sáb 09:00–18:00, almoço 12:00–13:00.
-5. O acesso às telas é decidido pelo estado da conta (sem sessão, sem barbearia, pronta) com `Stack.Protected`.
+5. **Passo 2 de 4, `configuracao-inicial`, Seu horário**: ajustar dias, início, almoço e fim, intervalo entre horários e quantos dias a agenda fica aberta.
+6. **Passo 3 de 4, Seus serviços**: usar as sugestões (Corte, Barba, Corte + barba) ou adicionar o próprio serviço; dá para pular e fazer depois.
+7. **Passo 4 de 4, Tudo pronto**: mostra o link e o botão de compartilhar. Ao concluir o passo 3, o banco marca `barbershops.onboarded_at` e o app não repete o passo a passo.
+8. O acesso às telas é decidido pelo estado da conta (sem sessão, sem barbearia, pronta) com `Stack.Protected`; conta pronta com `onboarded_at` vazio é redirecionada ao passo a passo.
 
 Requisito: os templates "Confirm sign up" e "Magic link or OTP" do Supabase usam `{{ .Token }}`.
 
@@ -19,7 +22,7 @@ Requisito: os templates "Confirm sign up" e "Magic link or OTP" do Supabase usam
 - Três abas: **Dia** (seletor dos próximos 14 dias, totais do dia), **Pendências (n)** (pagamentos a receber na
   barbearia) e **Cancelados (n)**. Cancelados ficam fora da lista do dia.
 - Totais: atendimentos; recebido e a receber (modos com pagamento) ou previsto (modo comum).
-- No cartão do agendamento: **concluir**, **cancelar**, **dar baixa no pagamento** (Pix ou dinheiro) e **bloquear cliente**.
+- No cartão do agendamento: **concluir**, **cancelar**, **dar baixa no pagamento** (Pix, dinheiro ou cartão) e **bloquear cliente**.
 - Puxar para atualizar. Os dados vêm do Supabase (RLS: só a própria barbearia).
 
 ### 1.3 Configuração da agenda ✅ 🧪
@@ -36,7 +39,7 @@ Acessada pelo ícone na Home e pelo card em destaque em Recursos.
 Lista e formulário: foto (até 2 MB), nome, preço, duração (5–480 min, de 5 em 5), **preço por dia da semana**, ativo/desativado, excluir.
 
 ### 1.5 Meu link ✅
-Mostra o endereço público `probarberapp.com.br/{slug}` para copiar/compartilhar.
+Mostra o endereço público `probarberapp.com.br/{slug}`, com **Compartilhar link** e **Alterar link** (verifica se o novo endereço está livre e avisa que o link antigo deixa de funcionar).
 
 ### 1.6 Configurações ✅ 🧪
 - **Dados da barbearia**: nome, link (com verificação de disponibilidade e aviso de que o link antigo para de funcionar), telefone, endereço, Instagram, Facebook, link de avaliação do Google, **logo** (envio imediato).
@@ -85,6 +88,7 @@ Detalhes e responsáveis em [pendencias.md](pendencias.md).
 | Lembrete por e-mail | Tarefa agendada (ex.: Vercel Cron) usando `reminder_sent_at` |
 | Expirar Pix abandonado | Liberar o horário reservado e não pago |
 | Webhook do Pix | Trocar a consulta a cada 3 s por notificação do AbacatePay |
+| Débito e crédito separados na baixa com cartão | Hoje é só "Cartão" |
 | Aviso ao barbeiro quando o cliente cancela | E-mail ou notificação push |
 | Equipe e "Barbeiro Chefe" | Vários profissionais por barbearia (o banco já suporta) |
 | Estoque, Financeiro, Lembretes, Suporte | Telas hoje "em breve" |

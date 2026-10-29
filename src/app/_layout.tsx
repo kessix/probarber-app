@@ -63,7 +63,9 @@ function Shell() {
         <Stack.Protected guard={status === 'ready'}>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="agenda/configuracao" options={{ title: 'Configuração da agenda' }} />
+          <Stack.Screen name="configuracao-inicial" options={{ headerShown: false, gestureEnabled: false }} />
           <Stack.Screen name="meu-link" options={{ title: 'Meu link' }} />
+          <Stack.Screen name="alterar-link" options={{ title: 'Alterar link' }} />
           <Stack.Screen name="servicos/index" options={{ title: 'Serviços' }} />
           <Stack.Screen name="servicos/[id]" options={{ title: 'Serviço' }} />
           <Stack.Screen name="configuracoes/index" options={{ title: 'Configurações' }} />
